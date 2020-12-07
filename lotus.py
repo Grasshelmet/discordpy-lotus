@@ -6,15 +6,10 @@ description = '''Beep Beep boop boop'''
 startup_extensions = ['basic','info']
 default_prefix = '!'
 
-data = None
+#retrieves server specific prefixes or gives default !
 def get_prefix(bot,message):
-    try:
-        data == None
-    except:
-        with open('bot_config/prefixes.json') as f:
-            print('opening file')
-            data = json.load(f)
-
+    with open('bot_config/prefixes.json','r') as f:
+        data = json.load(f)
     if not str(message.guild.id) in data:
         return commands.when_mentioned_or('!')(bot,message)
     return commands.when_mentioned_or(data[str(message.guild.id)])(bot,message)

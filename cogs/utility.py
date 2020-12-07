@@ -8,7 +8,7 @@ class Utility(commands.Cog):
         self.bot = bot
         self.last_membner = None
 
-    @commands.command(aliases=['tz'])
+    @commands.command(aliases=['tz','time'])
     @commands.group()
     async def timezone(self,ctx,arg1=None):
         frmt = '%I:%M %p %Z'
@@ -27,7 +27,6 @@ class Utility(commands.Cog):
             tz = pytz.timezone(arg1)
             ti = c_utc.astimezone(tz)
             await ctx.channel.send('Current time is {}'.format(ti.strftime(frmt) ))
-
 
 
 def setup(bot):
