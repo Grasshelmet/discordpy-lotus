@@ -3,3 +3,7 @@
 ################################################################################
 
 /__pycache__
+/lotus.sln
+/lotus.pyproj
+/bot_config/prefixes.json
+/.vs
