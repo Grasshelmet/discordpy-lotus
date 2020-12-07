@@ -1,13 +1,28 @@
 from discord.ext import commands
 from checks import check_owner,TOKEN
-import os
+import os,json
 
 description = '''Beep Beep boop boop'''
-
-bot = commands.Bot(command_prefix='!',description=description)
-
-
 startup_extensions = ['basic','info']
+default_prefix = '!'
+
+data = None
+def get_prefix(bot,message):
+    try:
+        data == None
+    except:
+        with open('bot_config/prefixes.json') as f:
+            print('opening file')
+            data = json.load(f)
+
+    if not str(message.guild.id) in data:
+        return commands.when_mentioned_or('!')(bot,message)
+    return commands.when_mentioned_or(data[str(message.guild.id)])(bot,message)
+
+
+
+
+bot = commands.Bot(command_prefix=get_prefix,description=description)
 
 
 class Core(commands.Cog,name='core'):
