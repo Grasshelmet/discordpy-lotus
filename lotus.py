@@ -19,10 +19,10 @@ class Core(commands.Cog,name='core'):
     @commands.command()
     async def loadcog(self,ctx,arg1):
         try:
-            bot.load_extension(arg1)
+            bot.load_extension('cogs.{}'.format(arg1))
             await ctx.channel.send('Loaded Extension {}.'.format(arg1))
         except Exception as e:
-            exe = '{}: {}'.format(e.__name__,e)
+            exe = '{}: {}'.format(e.name,e)
             await ctx.channel.send('Unable to load Extension {}\n{}'.format(arg1,exe))
 
     #unloads a cog extension
@@ -31,19 +31,20 @@ class Core(commands.Cog,name='core'):
         if arg1 == 'core':
             return await ctx.channel.send('{0.message.author.mention} Cannot unload core cog'.format(ctx))
         try:
-            bot.unload_extension(arg1)
+            bot.unload_extension('cogs.{}'.format(arg1))
             await ctx.channel.send('Cog {} unloaded'.format(arg1))
         except Exception as e:
-            exe = '{}: {}'.format(e.__name__,e)
+            exe = '{}: {}'.format(e.name,e)
             await ctx.channel.send('Unable to unload Extension {}\n{}'.format(arg1,exe))
 
     #restarts a cog
     @commands.command()
     async def reloadcog(self,ctx,arg1):
         try:
-            reload_extension(arg1)
+            bot.reload_extension('cogs.{}'.format(arg1))
+            await ctx.channel.send('{} Extension Reloaded'.format(arg1))
         except Exception as e:
-            exe = '{}: {}'.format(e.name,e)
+            exe = '{}: {}'.format(e.__name__,e)
             print(exe)
             await ctx.channel.send('Cog {} could not be reloaded: {}'.format(arg1,e.name))
     
