@@ -20,7 +20,7 @@ def get_prefix(bot,message):
 bot = commands.Bot(command_prefix=get_prefix,description=description)
 
 
-class Core(commands.Cog,name='core'):
+class Core(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
         self._last_member = None
@@ -74,6 +74,32 @@ class Core(commands.Cog,name='core'):
     async def quit(self,ctx):
         await self.bot.logout()
 
+    #sets server prefix
+    @commands.group(invoke_without_command=True)
+    async def prefix(self,ctx,args):
+        if ctx.invoked_subcommand is None:
+            with open('bot_config/prefixes.json','r') as f:
+                data = json.load(f)
+            data[str(ctx.guild.id)] = args
+            with open('bot_config/prefixes.json','w') as f:
+                json.dump(data,f)
+            await ctx.channel.send('Server Prefix Successfully set to: {}'.format(args))
+    
+    #Remove a guilds set prefix
+    @prefix.command()
+    async def rmv(self,ctx):
+        with open('bot_config/prefixes.json','r') as f:
+            data = json.load(f)
+        try:
+            data.pop('{}'.format(ctx.guild.id),None)
+            with open('bot_config/prefixes.json','w') as f:
+                json.dump(data,f)
+            await ctx.channel.send('Server Prefix Removed, Default Prefix: {}'.format(default_prefix))
+        except Exception as e:
+            await ctx.channel.send('Server had no custom prefix, Default Prefix: {}'.format(default_prefix))
+        
+
+    #makes core commands only available to the owner
     async def cog_check(self,ctx):
         if not check_owner(ctx):
             await ctx.channel.send('{} You do not own this bot.'.format(ctx.message.author.mention))
