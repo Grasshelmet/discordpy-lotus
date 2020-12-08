@@ -15,9 +15,14 @@ class Basic(commands.Cog):
         print('Logged in as {0.user}'.format(self.bot))
 
     #a class ping/pong command
-    @commands.command()
+    @commands.group()
     async def ping(self,ctx):
-        await ctx.send('pong')
+        if ctx.invoked_subcommand is None:
+            await ctx.send('pong')
+
+    @ping.command()
+    async def pong(self,ctx):
+        await ctx.send('ping pong')
 
     #renames a single users nickname
     @commands.command()
