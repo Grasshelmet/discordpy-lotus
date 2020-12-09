@@ -75,7 +75,7 @@ class Core(commands.Cog):
         await self.bot.logout()
 
     #sets server prefix
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True,aliases=['setprefix'])
     async def prefix(self,ctx,args):
         if ctx.invoked_subcommand is None:
             with open('bot_config/prefixes.json','r') as f:
