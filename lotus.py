@@ -1,6 +1,6 @@
 from discord.ext import commands
 from checks import check_owner,TOKEN
-import os,json
+import os,json,discord
 
 description = '''Beep Beep boop boop'''
 startup_extensions = ['basic','info']
@@ -15,9 +15,11 @@ def get_prefix(bot,message):
     return commands.when_mentioned_or(data[str(message.guild.id)])(bot,message)
 
 
+intents = discord.Intents.default()
+intents.members = True
 
 
-bot = commands.Bot(command_prefix=get_prefix,description=description)
+bot = commands.Bot(command_prefix=get_prefix,description=description,intents=intents)
 
 
 class Core(commands.Cog):
@@ -30,6 +32,9 @@ class Core(commands.Cog):
     async def loadcog(self,ctx,arg1):
         try:
             bot.load_extension('cogs.{}'.format(arg1))
+            print('--------------------------------\n')
+            print('\t{} Cog loaded\n'.format(arg1))
+            print('--------------------------------\n')
             await ctx.channel.send('Loaded Extension {}.'.format(arg1))
         except Exception as e:
             exe = '{}: {}'.format(e.name,e)

@@ -6,7 +6,7 @@ from checks import check_owner
 class Utility(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
-        self.last_membner = None
+        self.last_member = None
 
 
     @commands.group(invoke_without_command =True,aliases=['tz','time'])
@@ -90,7 +90,7 @@ class Utility(commands.Cog):
 
         with open('bot_config/timezones.json','w') as f:
             json.dump(data,f)
-        await ctx.channel.send('Timezone for {} set to: {}'.format(member.mention,pytz.timezone(arg)))
+        await ctx.channel.send('Timezone for {} set to: {}'.format(member,pytz.timezone(arg)))
 
     #get time of specfied zone
     @timezone.command()
@@ -112,6 +112,19 @@ class Utility(commands.Cog):
             ti = c_utc.astimezone(tz)
             await ctx.channel.send('Current time is {}'.format(ti.strftime(frmt) ))
 
+    #Dispay times of all set members in guild
+    @timezone.command()
+    async def all(self,ctx):
+        frmt = '%I:%M %p %Z'
+        c_utc = datetime.now(pytz.timezone('UTC'))
+        with open('bot_config/timezones.json','r') as f:
+            data = json.load(f)
+        members = await ctx.guild.fetch_members(limit=None).flatten()
+        for member in members:
+            if str(member.id) in data:
+                tz = data[str(member.id)]
+                c_tz = c_utc.astimezone(pytz.timezone(tz))
+                await ctx.channel.send('Current time for {} is: {}'.format(member,c_tz.strftime(frmt) ))
 
 
 def setup(bot):
