@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from checks import check_owner
 
 
 class Basic(commands.Cog):

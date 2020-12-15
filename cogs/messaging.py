@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from checks import check_owner
+from bot_config.checks import check_owner
 
 class Messaging(commands.Cog):
 
