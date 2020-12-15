@@ -1,7 +1,6 @@
-import discord,time,pytz,json
+import discord,time,pytz,json, binascii
 from datetime import datetime,timezone
 from discord.ext import commands
-from checks import check_owner
 
 class Utility(commands.Cog):
     def __init__(self,bot):
@@ -58,7 +57,7 @@ class Utility(commands.Cog):
 
         with open('bot_config/timezones.json','w') as f:
             json.dump(data,f)
-        await ctx.channel.send('Timezone for {} set to: {}'.format(ctx.author.mention,pytz.timezone(arg)))
+        await ctx.channel.send('Timezone for {} set to: {}'.format(ctx.author,pytz.timezone(arg)))
 
     #set timezone of mentioned member
     @timezone.command(invoke_without_command=True)
@@ -125,6 +124,26 @@ class Utility(commands.Cog):
                 tz = data[str(member.id)]
                 c_tz = c_utc.astimezone(pytz.timezone(tz))
                 await ctx.channel.send('Current time for {} is: {}'.format(member,c_tz.strftime(frmt) ))
+
+    #Convert and display number binary into ascii
+    @commands.group(aliases=['cvrt'],invoke_without_command = True)
+    async def convert(self,ctx,*,args):
+        input= str(args)
+        bis = input.split(' ')
+        con = ''
+        for byte in bis:
+            con= ''.join([con,chr(int(byte,2))])
+        await ctx.channel.send(con)
+
+    #convert ascii into binary
+    @convert.command(aliases=['bi'])
+    async def binary(self,ctx,*,args):
+        input =str(args)
+        con = ''
+        for char in input:
+            asc = (bin(ord(char))[2:].zfill(8))
+            con = ' '.join([con,asc])
+        await ctx.channel.send(con)
 
 
 def setup(bot):

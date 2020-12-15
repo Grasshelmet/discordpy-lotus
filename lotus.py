@@ -1,5 +1,6 @@
 from discord.ext import commands
-from checks import check_owner,TOKEN
+from tok import TOKEN
+from bot_config.checks import check_owner
 import os,json,discord
 
 description = '''Beep Beep boop boop'''
@@ -14,12 +15,13 @@ def get_prefix(bot,message):
         return commands.when_mentioned_or('!')(bot,message)
     return commands.when_mentioned_or(data[str(message.guild.id)])(bot,message)
 
-
 intents = discord.Intents.default()
 intents.members = True
 
 
 bot = commands.Bot(command_prefix=get_prefix,description=description,intents=intents)
+
+
 
 
 class Core(commands.Cog):
@@ -106,7 +108,7 @@ class Core(commands.Cog):
 
     #makes core commands only available to the owner
     async def cog_check(self,ctx):
-        if not check_owner(ctx):
+        if not await check_owner(ctx):
             await ctx.channel.send('{} You do not own this bot.'.format(ctx.message.author.mention))
             return False
         else:
