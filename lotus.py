@@ -1,5 +1,5 @@
 from discord.ext import commands
-from tok import TOKEN
+from bot_config.tok import TOKEN
 from bot_config.checks import check_owner
 import os,json,discord
 
@@ -11,6 +11,12 @@ default_prefix = '!'
 def get_prefix(bot,message):
     with open('bot_config/prefixes.json','r') as f:
         data = json.load(f)
+
+    if message.guild == None:
+        if not str(message.channel.id) in data:
+            return commands.when_mentioned_or('!')(bot,message)
+        return commands.when_mentioned_or(data[str(message.channel.id)])(bot,message)
+    
     if not str(message.guild.id) in data:
         return commands.when_mentioned_or('!')(bot,message)
     return commands.when_mentioned_or(data[str(message.guild.id)])(bot,message)
@@ -31,50 +37,80 @@ class Core(commands.Cog):
 
     #loads in a cog extension
     @commands.command()
-    async def loadcog(self,ctx,arg1):
-        try:
-            bot.load_extension('cogs.{}'.format(arg1))
-            print('--------------------------------\n')
-            print('\t{} Cog loaded\n'.format(arg1))
-            print('--------------------------------\n')
-            await ctx.channel.send('Loaded Extension {}.'.format(arg1))
-        except Exception as e:
-            exe = '{}: {}'.format(e.name,e)
-            await ctx.channel.send('Unable to load Extension {}\n{}'.format(arg1,exe))
+    async def loadcog(self,ctx,*args):
+        for arg1 in args:
+            try:
+                bot.load_extension('cogs.{}'.format(arg1))
+                print('--------------------------------\n')
+                print('\t{} Cog loaded\n'.format(arg1))
+                print('--------------------------------\n')
+                await ctx.channel.send('Loaded Extension {}.'.format(arg1))
+            except Exception as e:
+                exe = '{}: {}'.format(e.name,e)
+                await ctx.channel.send('Unable to load Extension {}\n{}'.format(arg1,exe))
 
     #unloads a cog extension
     @commands.command()
-    async def unloadcog(self,ctx,arg1):
-        if arg1 == 'core':
-            return await ctx.channel.send('{0.message.author.mention} Cannot unload core cog'.format(ctx))
-        try:
-            bot.unload_extension('cogs.{}'.format(arg1))
-            await ctx.channel.send('Cog {} unloaded'.format(arg1))
-        except Exception as e:
-            exe = '{}: {}'.format(e.name,e)
-            await ctx.channel.send('Unable to unload Extension {}\n{}'.format(arg1,exe))
+    async def unloadcog(self,ctx,*args):
+        for arg1 in args:
+            if arg1 == 'core':
+                return await ctx.channel.send('{0.message.author.mention} Cannot unload core cog'.format(ctx))
+            try:
+                bot.unload_extension('cogs.{}'.format(arg1))
+                await ctx.channel.send('Cog {} unloaded'.format(arg1))
+            except Exception as e:
+                exe = '{}: {}'.format(e.name,e)
+                await ctx.channel.send('Unable to unload Extension {}\n{}'.format(arg1,exe))
 
     #restarts a cog
     @commands.command()
-    async def reloadcog(self,ctx,arg1):
-        try:
-            bot.reload_extension('cogs.{}'.format(arg1))
-            await ctx.channel.send('{} Extension Reloaded'.format(arg1))
-        except Exception as e:
-            exe = '{}: {}'.format(e.__name__,e)
-            print(exe)
-            await ctx.channel.send('Cog {} could not be reloaded: {}'.format(arg1,e.name))
+    async def reloadcog(self,ctx,*args):
+        for arg1 in args:
+            if(arg1 =='core'):
+                await ctx.send('Can\'t reload core cog')
+                continue
+            try:
+                bot.reload_extension('cogs.{}'.format(arg1))
+                await ctx.channel.send('{} Extension Reloaded'.format(arg1))
+            except Exception as e:
+                exe = '{}: {}'.format(e.__name__,e)
+                await ctx.channel.send('Cog {} could not be reloaded: {}'.format(arg1,e.name))
     
     #restarts the bot
     @commands.command()
     async def restart(self,ctx):
         try:
             print('Closing Bot.\n\n')
+            js = '{"restart":"None"}'
+            r = json.loads(js)
+            r['restart'] = ctx.channel.id
+            with open('bot_config/restartChannel.json','w') as f:
+                json.dump(r,f)
+                
+
             await self.bot.logout()
+
         except:
             pass
         finally:
                 os.system('py lotus.py')
+
+    #on ready
+    #Sends message to console on startup
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print('Logged in as {0.user}'.format(self.bot))
+
+        try:
+            with open('bot_config/restartChannel.json','r') as f:
+                data = json.load(f)
+            id=data['restart']
+            data['restart'] = None
+            with open('bot_config/restartChannel.json','w') as f:
+                json.dump(data,f)
+            await self.bot.get_channel(id).send('Bot sussesfully restarted')
+        except Exception as e:
+            print(e)
 
     #quits the bot
     @commands.command()
@@ -84,21 +120,32 @@ class Core(commands.Cog):
     #sets server prefix
     @commands.group(invoke_without_command=True,aliases=['setprefix'])
     async def prefix(self,ctx,args):
-        if ctx.invoked_subcommand is None:
-            with open('bot_config/prefixes.json','r') as f:
-                data = json.load(f)
-            data[str(ctx.guild.id)] = args
-            with open('bot_config/prefixes.json','w') as f:
-                json.dump(data,f)
-            await ctx.channel.send('Server Prefix Successfully set to: {}'.format(args))
+        id = 0
+        if ctx.guild == None:
+            id =ctx.channel.id
+        else:
+            id = ctx.guild.id
+
+        with open('bot_config/prefixes.json','r') as f:
+            data = json.load(f)
+        data[str(id)] = args
+        with open('bot_config/prefixes.json','w') as f:
+            json.dump(data,f)
+        await ctx.channel.send('Server Prefix Successfully set to: {}'.format(args))
     
     #Remove a guilds set prefix
     @prefix.command()
     async def rmv(self,ctx):
+        id = 0
+        if ctx.guild == None:
+            id =ctx.channel.id
+        else:
+            id = ctx.guild.id
+
         with open('bot_config/prefixes.json','r') as f:
             data = json.load(f)
         try:
-            data.pop('{}'.format(ctx.guild.id),None)
+            data.pop('{}'.format(id),None)
             with open('bot_config/prefixes.json','w') as f:
                 json.dump(data,f)
             await ctx.channel.send('Server Prefix Removed, Default Prefix: {}'.format(default_prefix))
