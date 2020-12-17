@@ -1,17 +1,13 @@
 import discord
 from discord.ext import commands
 
+description = 'Simple cpg with {}ping and {}nick'
 
-class Basic(commands.Cog):
+class Basic(commands.Cog,name='basic',description=description):
 
     def __init__(self, bot):
         self.bot = bot
         self._last_member = None
-
-    #Sends message to console on startup
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print('Logged in as {0.user}'.format(self.bot))
 
     #a class ping/pong command
     @commands.group()
