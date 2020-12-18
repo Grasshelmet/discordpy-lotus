@@ -9,8 +9,11 @@ default_prefix = '!'
 
 #retrieves server specific prefixes or gives default !
 def get_prefix(bot,message):
-    with open('bot_config/prefixes.json','r') as f:
-        data = json.load(f)
+    try:
+        with open('bot_config/prefixes.json','r') as f:
+            data = json.load(f)
+    except Exception as e:
+        return commands.when_mentioned_or('!')(bot,message)
 
     if message.guild == None:
         if not str(message.channel.id) in data:
@@ -126,8 +129,13 @@ class Core(commands.Cog):
         else:
             id = ctx.guild.id
 
-        with open('bot_config/prefixes.json','r') as f:
-            data = json.load(f)
+        try:
+            with open('bot_config/prefixes.json','r') as f:
+                data = json.load(f)
+        except Exception as e:
+            d = '{}'
+            data = json.loads(d)
+
         data[str(id)] = args
         with open('bot_config/prefixes.json','w') as f:
             json.dump(data,f)
@@ -182,8 +190,8 @@ for extension in startup_extensions:
        print('\t{} Cog loaded\n'.format(extension))
        print('--------------------------------\n')
     except Exception as e:
-        exe = '{}: {}'.format(e.__name__,e)
-        print('Unable to load Exstension {}\n {}'.format(extention,exe))
+        exe = '{}: {}'.format(e.name,e)
+        print('Unable to load Exstension {}\n {}'.format(extension,exe))
 
 
 bot.run(TOKEN)

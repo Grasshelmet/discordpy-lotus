@@ -15,9 +15,12 @@ class Utility(commands.Cog):
         if member == None:
             await ctx.channel.send('Current time is {}'.format(c_utc.strftime(frmt) ))
             return
-
-        with open('bot_config/timezones.json','r') as f:
-            data = json.load(f)
+        try:
+            with open('bot_config/timezones.json','r') as f:
+                data = json.load(f)
+        except Exception as e:
+            jd ='{}'
+            data = json.loads(jd)
 
         try:
             tz = data[str(member.id)]
@@ -45,8 +48,12 @@ class Utility(commands.Cog):
             await ctx.channel.send('Argument was not a valid timezone')
 
 
-        with open('bot_config/timezones.json','r') as f:
-            data = json.load(f)
+        try:
+            with open('bot_config/timezones.json','r') as f:
+                data = json.load(f)
+        except Exception as e:
+            jd ='{}'
+            data = json.loads(jd)
 
         try:
             data[str(ctx.author.id)] = arg
@@ -77,8 +84,12 @@ class Utility(commands.Cog):
             await ctx.channel.send('Argument was not a valid timezone')
 
 
-        with open('bot_config/timezones.json','r') as f:
-            data = json.load(f)
+        try:
+            with open('bot_config/timezones.json','r') as f:
+                data = json.load(f)
+        except Exception as e:
+            jd ='{}'
+            data = json.loads(jd)
 
         try:
             data[str(member.id)] = arg
@@ -116,8 +127,13 @@ class Utility(commands.Cog):
     async def all(self,ctx):
         frmt = '%I:%M %p %Z'
         c_utc = datetime.now(pytz.timezone('UTC'))
-        with open('bot_config/timezones.json','r') as f:
-            data = json.load(f)
+        try:
+            with open('bot_config/timezones.json','r') as f:
+                data = json.load(f)
+        except Exception as e:
+            jd ='{}'
+            data = json.loads(jd)
+
         members = await ctx.guild.fetch_members(limit=None).flatten()
         for member in members:
             if str(member.id) in data:
