@@ -3,7 +3,7 @@ from discord.ext import commands
 
 description = 'Simple cpg with {}ping and {}nick'
 
-class Basic(commands.Cog,name='basic',description=description):
+class Basic(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot

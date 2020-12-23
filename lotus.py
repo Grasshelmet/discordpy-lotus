@@ -76,7 +76,7 @@ class Core(commands.Cog):
                 bot.reload_extension('cogs.{}'.format(arg1))
                 await ctx.channel.send('{} Extension Reloaded'.format(arg1))
             except Exception as e:
-                exe = '{}: {}'.format(e.__name__,e)
+                exe = '{}: {}'.format(e.name,e)
                 await ctx.channel.send('Cog {} could not be reloaded: {}'.format(arg1,e.name))
     
     #restarts the bot
