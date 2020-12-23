@@ -57,14 +57,32 @@ class Games(commands.Cog):
             await msg.add_reaction(react)
 
         try:
-            reaction,user = await self.bot.wait_for('reaction_add',check = lambda reaction,user : user == ctx.author and str(reaction.emoji) in ['✅','\N{CROSS MARK}'])
+            msgFlag= False
+            while not msgFlag:
+                reaction,user = await self.bot.wait_for('reaction_add',check = lambda reaction,user : user == ctx.author and str(reaction.emoji) in ['✅','\N{CROSS MARK}'])
+                if reaction.message.id == msg.id:
+                    msgFlag = True
+
         except Exception as e:
             pass
         else:
+            
             if str(reaction.emoji) == '\N{CROSS MARK}':
                 await msg.delete()
             elif str(reaction.emoji) == '✅':
-                await ctx.channel.send('✅')
+                msg = await ctx.fetch_message(msg.id)
+                for re in msg.reactions:
+                    if str(re.emoji) == '⬆️':
+                        playre = re
+                        reactUsers = await playre.users().flatten()
+
+                playin= []
+                for use in reactUsers:
+                    if use.bot==False:
+                        await ctx.channel.send('{} is playing.'.format(use))
+                        playin.append(use)
+ 
+
 
     #Shows the blackjack deck
     @blackjack.command(aliases=['sho'])
