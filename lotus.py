@@ -39,7 +39,7 @@ class Core(commands.Cog):
         self._last_member = None
 
     #loads in a cog extension
-    @commands.command()
+    @commands.command(brief='loads an unloaded cog')
     async def loadcog(self,ctx,*args):
         for arg1 in args:
             try:
@@ -49,11 +49,11 @@ class Core(commands.Cog):
                 print('--------------------------------\n')
                 await ctx.channel.send('Loaded Extension {}.'.format(arg1))
             except Exception as e:
-                exe = '{}: {}'.format(e.name,e)
+                exe = '{}: {}'.format(e.__cause__,e)
                 await ctx.channel.send('Unable to load Extension {}\n{}'.format(arg1,exe))
 
     #unloads a cog extension
-    @commands.command()
+    @commands.command(brief='unloads a loaded cog')
     async def unloadcog(self,ctx,*args):
         for arg1 in args:
             if arg1 == 'core':
@@ -62,11 +62,11 @@ class Core(commands.Cog):
                 bot.unload_extension('cogs.{}'.format(arg1))
                 await ctx.channel.send('Cog {} unloaded'.format(arg1))
             except Exception as e:
-                exe = '{}: {}'.format(e.name,e)
+                exe = '{}: {}'.format(e.__cause__,e)
                 await ctx.channel.send('Unable to unload Extension {}\n{}'.format(arg1,exe))
 
     #restarts a cog
-    @commands.command()
+    @commands.command(brief='reloads a loaded cog')
     async def reloadcog(self,ctx,*args):
         for arg1 in args:
             if(arg1 =='core'):
@@ -77,10 +77,10 @@ class Core(commands.Cog):
                 await ctx.channel.send('{} Extension Reloaded'.format(arg1))
             except Exception as e:
                 exe = '{}: {}'.format(e.name,e)
-                await ctx.channel.send('Cog {} could not be reloaded: {}'.format(arg1,e.name))
+                await ctx.channel.send('Cog {} could not be reloaded: {}'.format(arg1,e.__cause__))
     
     #restarts the bot
-    @commands.command()
+    @commands.command(brief='restarts the bot entirely')
     async def restart(self,ctx):
         try:
             print('Closing Bot.\n\n')
@@ -113,16 +113,19 @@ class Core(commands.Cog):
                 json.dump(data,f)
             await self.bot.get_channel(id).send('Bot sussesfully restarted')
         except Exception as e:
-            print(e)
+            print(e.__cause__)
 
     #quits the bot
-    @commands.command()
+    @commands.command(brief='shutsdown the bot')
     async def quit(self,ctx):
         await self.bot.logout()
 
     #sets server prefix
-    @commands.group(invoke_without_command=True,aliases=['setprefix'])
-    async def prefix(self,ctx,args):
+    @commands.group(invoke_without_command=True,aliases=['setprefix'],brief='sets the prefix for the server')
+    async def prefix(self,ctx,*args):
+        if not args:
+            await ctx.send('Please include the prefix as an argument')
+            return
         id = 0
         if ctx.guild == None:
             id =ctx.channel.id
@@ -136,10 +139,10 @@ class Core(commands.Cog):
             d = '{}'
             data = json.loads(d)
 
-        data[str(id)] = args
+        data[str(id)] = args[0]
         with open('bot_config/prefixes.json','w') as f:
             json.dump(data,f)
-        await ctx.channel.send('Server Prefix Successfully set to: {}'.format(args))
+        await ctx.channel.send('Server Prefix Successfully set to: {}'.format(args[0]))
     
     #Remove a guilds set prefix
     @prefix.command()
