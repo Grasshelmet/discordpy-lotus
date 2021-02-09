@@ -8,7 +8,7 @@ class Utility(commands.Cog):
         self.last_member = None
 
 
-    @commands.group(invoke_without_command =True,aliases=['tz','time'])
+    @commands.group(invoke_without_command =True,aliases=['tz','time'],brief='Timezone converter command')
     async def timezone(self,ctx,member : discord.Member=None):
         frmt = '%I:%M %p %Z'
         c_utc = datetime.now(pytz.timezone('UTC'))
@@ -142,7 +142,7 @@ class Utility(commands.Cog):
                 await ctx.channel.send('Current time for {} is: {}'.format(member,c_tz.strftime(frmt) ))
 
     #Convert and display number binary into ascii
-    @commands.group(aliases=['cvrt'],invoke_without_command = True)
+    @commands.group(aliases=['cvrt'],invoke_without_command = True,brief='Convert binary into ascii')
     async def convert(self,ctx,*,args):
         input= str(args)
         bis = input.split(' ')
@@ -152,7 +152,7 @@ class Utility(commands.Cog):
         await ctx.channel.send(con)
 
     #convert ascii into binary
-    @convert.command(aliases=['bi'])
+    @convert.command(aliases=['bi'],brief='Convert asci into binary')
     async def binary(self,ctx,*,args):
         input =str(args)
         con = ''
@@ -160,6 +160,21 @@ class Utility(commands.Cog):
             asc = (bin(ord(char))[2:].zfill(8))
             con = ' '.join([con,asc])
         await ctx.channel.send(con)
+
+
+    #gives an invite link by which to invite the bot to other servers
+    @commands.command(brief='Gives a Link by which to invite bot to server,default admin link')
+    async def invitelink(self,ctx,member : discord.Member = None):
+        dest = ctx.channel
+        if member != None:
+            dest = member.dm_channel
+            if dest == None:
+                dest = await member.create_dm()
+        try:
+            await dest.send('https://discord.com/oauth2/authorize?client_id=762960764977545226&scope=bot')
+            print('Invite Link sent to {}'.format(dest))
+        except Exception as e:
+            print('Failed to send\n {}:{}\n'.format(e,e.__str__))
 
 
 def setup(bot):
