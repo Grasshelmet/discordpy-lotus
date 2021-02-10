@@ -45,20 +45,60 @@ class Info(commands.Cog):
 
 
     @commands.command(invoke_without_command=True,brief='Help Function,use {prefix}help {command} for help on a command')
-    async def help(self,ctx):
+    async def help(self,ctx,*args):
         cogs = dict(self.bot.cogs)
+        
 
-        comlist=''
-        for cog in cogs.keys():
-            comlist+= '**__' + cog + '__**:\n'
-            for com in cogs.get(cog).get_commands():
-                bs=''
-                if com.brief != None:
-                    bs = ': '+ str(com.brief)
+        if not args:
+            comlist=''
+            for cog in cogs.keys():
+                comlist+= '**__' + cog + '__**:\n'
+                for com in cogs.get(cog).get_commands():
+                    bs=''
+                    if com.brief != None:
+                        bs = ': '+ str(com.brief)
                     
-                comlist+= '**' + str(com.name) + '**' + bs + '\n'
-            comlist += '\n'
-        await ctx.send(''+comlist+'')
+                    comlist+= '**' + str(com.name) + '**' + bs + '\n'
+                comlist += '\n'
+            await ctx.send(''+comlist+'')
+            return
+
+        #if argument was supplied
+        else:
+
+            comlist =[]
+            foundcom=None
+            for cog in cogs.keys():
+                for com in (cogs.get(cog).walk_commands()):
+                    if com.name == args[0]:
+                        foundcom = com
+                        break
+            if foundcom == None:
+                await ctx.send('Command not found.')
+                return
+
+            comstr=''
+            if foundcom.description:
+                comstr = str(foundcom.description)
+            else:
+                comstr = str(foundcom.brief)
+
+
+            comBed = Embed(title='{}:'.format(foundcom),type='rich',color=0x4080A0)
+            comBed.add_field(name='Description:',value=comstr,inline=True)
+
+            
+            try:
+                sublist=''
+                for com in foundcom.walk_commands():
+                    if com.parent():
+                        sublist += com.name + ': ' + str(com.brief) + '\n'
+                comBed.add_field(name='Subcommands',value=sublist,inline=False)
+            except:
+                pass
+
+            await ctx.send(embed=comBed)            
+   
 
 def setup(bot):
     bot.add_cog(Info(bot))
