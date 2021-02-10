@@ -74,6 +74,9 @@ class Core(commands.Cog):
                 continue
             try:
                 bot.reload_extension('cogs.{}'.format(arg1))
+                print('--------------------------------\n')
+                print('\t{} Cog reloaded\n'.format(arg1))
+                print('--------------------------------\n')
                 await ctx.channel.send('{} Extension Reloaded'.format(arg1))
             except Exception as e:
                 exe = '{}: {}'.format(e.name,e)
@@ -145,7 +148,7 @@ class Core(commands.Cog):
         await ctx.channel.send('Server Prefix Successfully set to: {}'.format(args[0]))
     
     #Remove a guilds set prefix
-    @prefix.command()
+    @prefix.command(brief='Removes the set prefix for the server command is used in')
     async def rmv(self,ctx):
         id = 0
         if ctx.guild == None:
