@@ -1,5 +1,6 @@
-import discord
+import discord,time
 from discord.ext import commands
+from discord import Embed
 
 description = 'Simple cpg with {}ping and {}nick'
 
@@ -37,6 +38,8 @@ class Basic(commands.Cog):
     @commands.command()
     async def delete(self,atx,arg1, member : discord.Member = None):
         return
+        
+        
 
 def setup(bot):
     bot.add_cog(Basic(bot))
