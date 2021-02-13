@@ -1,11 +1,33 @@
-import discord
+import discord, mysql.connector
+from mysql.connector import Error
 from discord.ext import commands
 from discord import Embed
+
+
+def create_connection(host_name,user_name,user_password,db_name):
+    connection = None
+    try:
+        connection = mysql.connector.connect(host = host_name,user=user_name,
+                                             passwd=user_password,database=db_name)
+        print("Connection to database {} successful".format(db_name))
+    except Error as e:
+        print("Failed to connect to {0}\n Error: {1}".format(db_name,e))
+
+        return connection
+
+def create_database(connection,query):
+    cursor = connection.cursor()
+    try:
+        cursor.execute(query)
+        print ("Database created successfully")
+    except Error as e:
+        print("Database not created\nError: {}".format(e))
 
 class Logging(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
         self.last_member=None
+        self.connection = create_connection("localhost","root","")
 
     #listenr for dms sent to the bot
     @commands.Cog.listener('on_message')
