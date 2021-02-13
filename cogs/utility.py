@@ -1,4 +1,4 @@
-import discord,time,pytz,json, binascii
+import discord,time,pytz,json, binascii,re
 from datetime import datetime,timezone
 from discord.ext import commands
 
@@ -161,6 +161,15 @@ class Utility(commands.Cog):
             con = ' '.join([con,asc])
         await ctx.channel.send(con)
 
+    @commands.command(brief="converts farenheit to celcius and vice versa")
+    async def temp(self,ctx,arg1):
+        li = re.split('(\d+)',arg1)
+        print(li)
+        if li[2] == "c":
+            await ctx.send("{}°c = {:.2f}°f".format(li[1],int(li[1])*(9/5)+32))
+        else:
+            await ctx.send("{}°f = {:.2f}°c".format(li[1],(int(li[1])-32)*(5/9)))
+        pass
 
     #gives an invite link by which to invite the bot to other servers
     @commands.command(brief='Gives a Link by which to invite bot to server,default admin link')
@@ -176,6 +185,7 @@ class Utility(commands.Cog):
         except Exception as e:
             print('Failed to send\n {}:{}\n'.format(e,e.__str__))
 
+    
 
 def setup(bot):
     bot.add_cog(Utility(bot))
