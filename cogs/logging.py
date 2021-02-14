@@ -1,19 +1,23 @@
 import discord, mysql.connector
+from cogs.cog_config.mysqldata import sqlconfig
 from mysql.connector import Error
 from discord.ext import commands
 from discord import Embed
 
-
-def create_connection(host_name,user_name,user_password,db_name):
+def create_connection(host,user,password,database=None):
     connection = None
     try:
-        connection = mysql.connector.connect(host = host_name,user=user_name,
-                                             passwd=user_password,database=db_name)
-        print("Connection to database {} successful".format(db_name))
+        if database!=None:
+            connection = mysql.connector.connect(host = host,user=user,
+                                             password=password,database=database)
+        else:
+            connection = mysql.connector.connect(host = host,user=user,
+                                             passwd=password)
+            print("Connection to database {} successful".format(database))
     except Error as e:
-        print("Failed to connect to {0}\n Error: {1}".format(db_name,e))
+        print("Failed to connect to {0}\n Error: {1}".format(database,e))
 
-        return connection
+    return connection
 
 def create_database(connection,query):
     cursor = connection.cursor()
@@ -23,11 +27,43 @@ def create_database(connection,query):
     except Error as e:
         print("Database not created\nError: {}".format(e))
 
+def dbinit():
+    connection = create_connection(**sqlconfig)
+    if connection == None:
+        connection = create_connection(sqlconfig['host'],sqlconfig['user'],sqlconfig['password'])
+        if connection != None:
+            create_database(connection,'CREATE DATABASE {}'.format(sqlconfig['database']))
+            connection.close()
+            return create_connection(**sqlconfig)
+    else:
+        return connection
+
+def execute_query(connection,query):
+    cursor = connection.cursor()
+    try:
+        cursor.execute(query)
+        connection.commit()
+        print ("Query executed successfully")
+    except Error as e:
+        print("Error: {}".format(e))
+
+def execute_read_query(connection,query):
+    cursor = connection.cursor()
+    result = None
+    try:
+        cursor.execute(query)
+        result = cursor.fetchall()
+        return result
+    except Error as e:
+        print("Error: {}".format(e))
+
+
+
 class Logging(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
         self.last_member=None
-        self.connection = create_connection("localhost","root","")
+        self.connection = dbinit()
 
     #listenr for dms sent to the bot
     @commands.Cog.listener('on_message')
