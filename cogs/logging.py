@@ -1,8 +1,11 @@
-import discord, mysql.connector
+import discord, mysql.connector,typing
 from cogs.cog_config.mysqldata import sqlconfig
 from mysql.connector import Error
 from discord.ext import commands
 from discord import Embed
+
+
+
 
 def create_connection(host,user,password,database=None):
     connection = None
@@ -66,8 +69,15 @@ class Logging(commands.Cog):
         self.last_member=None
         self.connection = dbinit()
 
+    def __del__(self):
+        self.connection.close()
 
-
+    async def check_connection(ctx):
+        if ctx.cog.connection == None:
+            ctx.send('No sqlserver connected to')
+            return False
+        else:
+            return True
 
 
     #refresh the connection to the server
@@ -75,7 +85,46 @@ class Logging(commands.Cog):
     async def refresh(self,ctx):
         self.connection.close()
         self.connection = dbinit()
-        pass
+        if self.connection == None:
+            ctx.send('Connection to database {} failed'.format(sqlconfig['database']))
+        else:
+            ctx.send('Connection to database {} successful'.format(sqlconfig['database']))
+
+    @commands.command(brief='adds a certain channel to a logging table')
+    @commands.check(check_connection)
+    async def addchannel(self,ctx,tbname,channel : typing.Union[discord.TextChannel, int]=None):
+        if type(channel) is not int:
+            channel = channel.id
+        if channel == None:
+            ctx.send('Channel unable to be found')
+            return
+
+        #creates table
+        create_table = """
+        CREATE TABLE IF NOT EXISTS {} (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            chanid VARCHAR(18)
+            ) ENGINE=InnoDB
+        """.format(tbname)
+        execute_query(self.connection,create_table)
+
+        insert_channel = ("""INSERT INTO {} 
+                          (chanid)
+                          VALUES ({})""".format(tbname,channel)
+
+                          )
+        execute_query(self.connection,insert_channel)
+
+    @commands.command(brief='Drops a Channel Id from a table')
+    @commands.check(check_connection)
+    async def rmvchannel(self,ctx,tbname,channel : typing.Union[discord.TextChannel, int]=None):
+        if type(channel) is not int:
+            channel = channel.id
+        if channel == None:
+            ctx.send('Channel unable to be found')
+            return
+        delete_channel = ("""DELETE FROM {} WHERE chanid ={}""".format(tbname,channel))
+        execute_query(self.connection,delete_channel)
 
     #listener for dms sent to the bot
     @commands.Cog.listener('on_message')
@@ -84,13 +133,31 @@ class Logging(commands.Cog):
             return
         if message.author.id == self.bot.user.id:
             return
-        channel = self.bot.get_channel(809190457044107315)
+        
+
+        
         
         mesEmbed = Embed(title='{0}: {0.id}'.format(message.author),type='rich',color=0xd010d0,timestamp=message.created_at)
         mesEmbed.set_thumbnail(url=message.author.avatar_url)
         mesEmbed.add_field(name='__Message:__',value=message.content,inline=False)
 
-        await channel.send(embed=mesEmbed)
+        if str(message.content).startswith(tuple(await self.bot.get_prefix(message))):
+            select_plain = "SELECT chanid FROM commsdms"
+            plainchans = execute_read_query(self.connection,select_plain)
+
+            for chan in plainchans:
+                channel = self.bot.get_channel(int(chan[0]))
+                await channel.send(embed=mesEmbed)
+        else:
+            select_plain = "SELECT chanid FROM plaindms"
+            plainchans = execute_read_query(self.connection,select_plain)
+
+            for chan in plainchans:
+                channel = self.bot.get_channel(int(chan[0]))
+                await channel.send(embed=mesEmbed)
+
+
+        
 
 def setup(bot):
     bot.add_cog(Logging(bot))
