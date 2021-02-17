@@ -10,6 +10,7 @@ def create_connection(host,user,password,database=None):
         if database!=None:
             connection = mysql.connector.connect(host = host,user=user,
                                              password=password,database=database)
+            print("Connection to database {} successful".format(database))
         else:
             connection = mysql.connector.connect(host = host,user=user,
                                              passwd=password)
@@ -65,7 +66,18 @@ class Logging(commands.Cog):
         self.last_member=None
         self.connection = dbinit()
 
-    #listenr for dms sent to the bot
+
+
+
+
+    #refresh the connection to the server
+    @commands.command(brief='Refreshes the connection to the mysql server')
+    async def refresh(self,ctx):
+        self.connection.close()
+        self.connection = dbinit()
+        pass
+
+    #listener for dms sent to the bot
     @commands.Cog.listener('on_message')
     async def botdms(self,message):
         if not (isinstance(message.channel,discord.DMChannel)):
