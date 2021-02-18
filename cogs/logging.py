@@ -1,6 +1,6 @@
 import discord, mysql.connector,typing
 from cogs.cog_config.mysqldata import sqlconfig
-from mysql.connector import Error
+from mysql.connector import Error,errorcode
 from discord.ext import commands
 from discord import Embed
 
@@ -50,6 +50,7 @@ def execute_query(connection,query):
         print ("Query executed successfully")
     except Error as e:
         print("Error: {}".format(e))
+        raise e
 
 def execute_read_query(connection,query):
     cursor = connection.cursor()
@@ -99,21 +100,33 @@ class Logging(commands.Cog):
             ctx.send('Channel unable to be found')
             return
 
-        #creates table
-        create_table = """
-        CREATE TABLE IF NOT EXISTS {} (
-            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            chanid VARCHAR(18)
-            ) ENGINE=InnoDB
-        """.format(tbname)
-        execute_query(self.connection,create_table)
+        try:
 
-        insert_channel = ("""INSERT INTO {} 
-                          (chanid)
-                          VALUES ({})""".format(tbname,channel)
+            #insert channel into table
+            insert_channel = ("""INSERT INTO {} 
+                              (chanid)
+                              VALUES ({})""".format(tbname,channel)
 
-                          )
-        execute_query(self.connection,insert_channel)
+                              )
+            execute_query(self.connection,insert_channel)
+        except mysql.connector.Error as e:
+            if e.errno == errorcode.ER_NO_SUCH_TABLE:
+                #creates table
+                create_table = """
+                CREATE TABLE IF NOT EXISTS {} (
+                    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    chanid VARCHAR(18)
+                    ) ENGINE=InnoDB
+                """.format(tbname)
+                execute_query(self.connection,create_table)
+
+                #insert channel into table
+                insert_channel = ("""INSERT INTO {} 
+                              (chanid)
+                              VALUES ({})""".format(tbname,channel)
+
+                              )
+                execute_query(self.connection,insert_channel)
 
     @commands.command(brief='Drops a Channel Id from a table')
     @commands.check(check_connection)
