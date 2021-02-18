@@ -71,11 +71,13 @@ class Logging(commands.Cog):
         self.connection = dbinit()
 
     def __del__(self):
-        self.connection.close()
+        print('Closing logging cog')
+        self.connection.cmd_quit()
+        self.connection = None
 
     async def check_connection(ctx):
         if ctx.cog.connection == None:
-            ctx.send('No sqlserver connected to')
+            await ctx.send('No sqlserver connected to')
             return False
         else:
             return True
@@ -84,12 +86,26 @@ class Logging(commands.Cog):
     #refresh the connection to the server
     @commands.command(brief='Refreshes the connection to the mysql server')
     async def refresh(self,ctx):
-        self.connection.close()
+        if self.connection != None:
+            self.connection.cmd_quit()
+            self.connection = None
         self.connection = dbinit()
         if self.connection == None:
-            ctx.send('Connection to database {} failed'.format(sqlconfig['database']))
+            await ctx.send('Connection to database {} failed'.format(sqlconfig['database']))
         else:
-            ctx.send('Connection to database {} successful'.format(sqlconfig['database']))
+            await ctx.send('Connection to database {} successful'.format(sqlconfig['database']))
+
+    @commands.command(brief='Closes the connection to the mysql server')
+    async def close(self,ctx):
+        self.connection.cmd_quit()
+        self.connection = None
+
+    @commands.command(brief='Checks if cog is connected to server/database')
+    async def check(self,ctx):
+        if self.connection == None:
+            await ctx.send('No server connection established')
+        else:
+            await ctx.send('Cog is connected to server: {} database: {}'.format(self.connection.server_host,self.connection._database))
 
     @commands.command(brief='adds a certain channel to a logging table')
     @commands.check(check_connection)
@@ -97,8 +113,23 @@ class Logging(commands.Cog):
         if type(channel) is not int:
             channel = channel.id
         if channel == None:
-            ctx.send('Channel unable to be found')
+            await ctx.send('Channel unable to be found')
             return
+
+        logtables = {
+            "commsdms":"commsdms",
+            "commanddms":"commsdms",
+            "plaindms":"plaindms",
+            "editlogs":"editlogs",
+            "messageedits":"editlogs"
+            }
+
+        tbname = logtables.get(tbname,"None")
+
+        if tbname == "None":
+            await ctx.send('Invalid database table')
+            return
+
 
         try:
 
@@ -134,8 +165,25 @@ class Logging(commands.Cog):
         if type(channel) is not int:
             channel = channel.id
         if channel == None:
-            ctx.send('Channel unable to be found')
+            await ctx.send('Channel unable to be found')
             return
+
+        logtables = {
+            "commsdms":"commsdms",
+            "commanddms":"commsdms",
+            "plaindms":"plaindms",
+            "editlogs":"editlogs",
+            "messageedits":"editlogs"
+            }
+
+        
+        tbname = logtables.get(tbname,"None")
+        
+        if tbname == "None":
+            await ctx.send('Invalid database table')
+            return
+
+
         delete_channel = ("""DELETE FROM {} WHERE chanid ={}""".format(tbname,channel))
         execute_query(self.connection,delete_channel)
 
