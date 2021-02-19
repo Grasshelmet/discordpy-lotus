@@ -129,6 +129,37 @@ class Logging(commands.Cog):
         if tbname == "None":
             await ctx.send('Invalid database table')
             return
+        elif tbname == "editlogs":
+            try:
+
+                #insert channel into table
+                insert_channel = ("""INSERT INTO {} 
+                                  (guildid,chanid)
+                                  VALUES ({},{})""".format(tbname,ctx.guild.id,channel)
+
+                                  )
+                execute_query(self.connection,insert_channel)
+                return
+            except mysql.connector.Error as e:
+                if e.errno == errorcode.ER_NO_SUCH_TABLE:
+                    #creates table
+                    create_table = """
+                    CREATE TABLE IF NOT EXISTS {} (
+                        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                        guildid VARCHAR(18),
+                        chanid VARCHAR(18)
+                        ) ENGINE=InnoDB
+                    """.format(tbname)
+                    execute_query(self.connection,create_table)
+
+                    #insert channel into table
+                    insert_channel = ("""INSERT INTO {} 
+                                  (guildid,chanid)
+                                  VALUES ({},{})""".format(tbname,ctx.guild.id,channel)
+
+                                  )
+                    execute_query(self.connection,insert_channel)
+                    return
 
 
         try:
@@ -217,7 +248,17 @@ class Logging(commands.Cog):
                 channel = self.bot.get_channel(int(chan[0]))
                 await channel.send(embed=mesEmbed)
 
+        @commands.Cog.listener('on_message_edit')
+        async def messdelete(self,before,after):
+            try:
+                select_edit = "SELECT chanid FROM commsdms"
+                plainchans = execute_read_query(self.connection,select_edit)
 
+                for chan in plainchans:
+                    channel = self.bot.get_channel(int(chan[0]))
+                    await channel.send(embed=mesEmbed)
+            except:
+                pass
         
 
 def setup(bot):
