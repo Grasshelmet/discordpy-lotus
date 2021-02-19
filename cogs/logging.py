@@ -121,73 +121,59 @@ class Logging(commands.Cog):
             "commanddms":"commsdms",
             "plaindms":"plaindms",
             "editlogs":"editlogs",
+            "editlog":"editlogs",
             "messageedits":"editlogs"
             }
 
         tbname = logtables.get(tbname,"None")
 
+        insert_channel=""
+        create_table=""
+
         if tbname == "None":
             await ctx.send('Invalid database table')
             return
+        #What to set insert channel and create table to if edit logs
         elif tbname == "editlogs":
-            try:
-
-                #insert channel into table
-                insert_channel = ("""INSERT INTO {} 
+            insert_channel = ("""INSERT INTO {} 
                                   (guildid,chanid)
                                   VALUES ({},{})""".format(tbname,ctx.guild.id,channel)
 
                                   )
-                execute_query(self.connection,insert_channel)
-                return
-            except mysql.connector.Error as e:
-                if e.errno == errorcode.ER_NO_SUCH_TABLE:
-                    #creates table
-                    create_table = """
-                    CREATE TABLE IF NOT EXISTS {} (
-                        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                        guildid VARCHAR(18),
-                        chanid VARCHAR(18)
-                        ) ENGINE=InnoDB
-                    """.format(tbname)
-                    execute_query(self.connection,create_table)
-
-                    #insert channel into table
-                    insert_channel = ("""INSERT INTO {} 
+            create_table = """
+                CREATE TABLE IF NOT EXISTS {} (
+                    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    guildid VARCHAR(18),
+                    chanid VARCHAR(18)
+                    ) ENGINE=InnoDB
+                """.format(tbname)
+        #What to set for plain text and commands sent to bot dms
+        elif tbname == "plaindms" or tbname == "commsdms":
+            insert_channel = ("""INSERT INTO {} 
                                   (guildid,chanid)
                                   VALUES ({},{})""".format(tbname,ctx.guild.id,channel)
 
                                   )
-                    execute_query(self.connection,insert_channel)
-                    return
+            create_table = """
+                CREATE TABLE IF NOT EXISTS {} (
+                    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    guildid VARCHAR(18),
+                    chanid VARCHAR(18)
+                    ) ENGINE=InnoDB
+                """.format(tbname)
 
 
         try:
 
             #insert channel into table
-            insert_channel = ("""INSERT INTO {} 
-                              (chanid)
-                              VALUES ({})""".format(tbname,channel)
-
-                              )
             execute_query(self.connection,insert_channel)
+
         except mysql.connector.Error as e:
             if e.errno == errorcode.ER_NO_SUCH_TABLE:
-                #creates table
-                create_table = """
-                CREATE TABLE IF NOT EXISTS {} (
-                    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    chanid VARCHAR(18)
-                    ) ENGINE=InnoDB
-                """.format(tbname)
+                #create table
                 execute_query(self.connection,create_table)
 
                 #insert channel into table
-                insert_channel = ("""INSERT INTO {} 
-                              (chanid)
-                              VALUES ({})""".format(tbname,channel)
-
-                              )
                 execute_query(self.connection,insert_channel)
 
     @commands.command(brief='Drops a Channel Id from a table')
@@ -249,7 +235,7 @@ class Logging(commands.Cog):
                 await channel.send(embed=mesEmbed)
 
         @commands.Cog.listener('on_message_edit')
-        async def messdelete(self,before,after):
+        async def messedit(self,before,after):
             try:
                 select_edit = "SELECT chanid FROM commsdms"
                 plainchans = execute_read_query(self.connection,select_edit)
