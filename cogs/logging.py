@@ -6,7 +6,7 @@ from discord import Embed
 
 
 
-
+#Creates the upfront connection to a server
 def create_connection(host,user,password,database=None):
     connection = None
     try:
@@ -23,6 +23,7 @@ def create_connection(host,user,password,database=None):
 
     return connection
 
+#creates database within a server connection
 def create_database(connection,query):
     cursor = connection.cursor()
     try:
@@ -31,17 +32,19 @@ def create_database(connection,query):
     except Error as e:
         print("Database not created\nError: {}".format(e))
 
+#initializes connection to server,calls create_database if needed
 def dbinit():
     connection = create_connection(**sqlconfig)
     if connection == None:
         connection = create_connection(sqlconfig['host'],sqlconfig['user'],sqlconfig['password'])
         if connection != None:
             create_database(connection,'CREATE DATABASE {}'.format(sqlconfig['database']))
-            connection.close()
+            connection.cmd_quit()
             return create_connection(**sqlconfig)
     else:
         return connection
 
+#Executes not returnable query
 def execute_query(connection,query):
     cursor = connection.cursor()
     try:
@@ -52,6 +55,7 @@ def execute_query(connection,query):
         print("Error: {}".format(e))
         raise e
 
+#Read query,will return list of data
 def execute_read_query(connection,query):
     cursor = connection.cursor()
     result = None
@@ -62,7 +66,18 @@ def execute_read_query(connection,query):
     except Error as e:
         print("Error: {}".format(e))
 
+#Get table name list
+def getTableName(tbname):
+    logtables = {
+            "commsdms":"commsdms",
+            "commanddms":"commsdms",
+            "plaindms":"plaindms",
+            "editlogs":"editlogs",
+            "editlog":"editlogs",
+            "messageedits":"editlogs"
+            }
 
+    return logtables.get(tbname,"None")
 
 class Logging(commands.Cog):
     def __init__(self,bot):
@@ -72,7 +87,8 @@ class Logging(commands.Cog):
 
     def __del__(self):
         print('Closing logging cog')
-        self.connection.cmd_quit()
+        if self.connection != None:
+            self.connection.cmd_quit()
         self.connection = None
 
     async def check_connection(ctx):
@@ -95,10 +111,15 @@ class Logging(commands.Cog):
         else:
             await ctx.send('Connection to database {} successful'.format(sqlconfig['database']))
 
+    #closes the connection to the server
     @commands.command(brief='Closes the connection to the mysql server')
     async def close(self,ctx):
-        self.connection.cmd_quit()
-        self.connection = None
+        if self.connection != None:
+            self.connection.cmd_quit()
+            self.connection = None
+            await ctx.send('Connection to server closed')
+        else:
+            await ctx.send('No connection available to close, hurray?')
 
     @commands.command(brief='Checks if cog is connected to server/database')
     async def check(self,ctx):
@@ -107,25 +128,21 @@ class Logging(commands.Cog):
         else:
             await ctx.send('Cog is connected to server: {} database: {}'.format(self.connection.server_host,self.connection._database))
 
-    @commands.command(brief='adds a certain channel to a logging table')
+    #adds channel to database table
+    @commands.command(brief='adds a certain channel to a database table',aliases=['setchannel'])
     @commands.check(check_connection)
     async def addchannel(self,ctx,tbname,channel : typing.Union[discord.TextChannel, int]=None):
+        if channel == None:
+            channel = ctx.channel.id
+        elif type(channel) is int:
+            channel = self.bot.get_channel(channel)
+            if channel == None:
+                await ctx.send('Channel could not be found')
+                return
         if type(channel) is not int:
             channel = channel.id
-        if channel == None:
-            await ctx.send('Channel unable to be found')
-            return
 
-        logtables = {
-            "commsdms":"commsdms",
-            "commanddms":"commsdms",
-            "plaindms":"plaindms",
-            "editlogs":"editlogs",
-            "editlog":"editlogs",
-            "messageedits":"editlogs"
-            }
-
-        tbname = logtables.get(tbname,"None")
+        getTableName(tbname)
 
         insert_channel=""
         create_table=""
@@ -176,25 +193,21 @@ class Logging(commands.Cog):
                 #insert channel into table
                 execute_query(self.connection,insert_channel)
 
+
     @commands.command(brief='Drops a Channel Id from a table')
     @commands.check(check_connection)
     async def rmvchannel(self,ctx,tbname,channel : typing.Union[discord.TextChannel, int]=None):
+        if channel == None:
+            channel = ctx.channel.id
+        elif type(channel) is int:
+            channel = self.bot.get_channel(channel)
+            if channel == None:
+                await ctx.send('Channel could not be found')
+                return
         if type(channel) is not int:
             channel = channel.id
-        if channel == None:
-            await ctx.send('Channel unable to be found')
-            return
 
-        logtables = {
-            "commsdms":"commsdms",
-            "commanddms":"commsdms",
-            "plaindms":"plaindms",
-            "editlogs":"editlogs",
-            "messageedits":"editlogs"
-            }
-
-        
-        tbname = logtables.get(tbname,"None")
+        getTableName(tbname)
         
         if tbname == "None":
             await ctx.send('Invalid database table')
@@ -234,17 +247,31 @@ class Logging(commands.Cog):
                 channel = self.bot.get_channel(int(chan[0]))
                 await channel.send(embed=mesEmbed)
 
-        @commands.Cog.listener('on_message_edit')
-        async def messedit(self,before,after):
-            try:
-                select_edit = "SELECT chanid FROM commsdms"
-                plainchans = execute_read_query(self.connection,select_edit)
+    @commands.Cog.listener('on_raw_message_edit')
+    async def messedit(self,payload):
+        ctxchan = self.bot.get_channel(payload.channel_id)
+        #retrieves before and after messages, before will get set to none if not in cache
+        before = payload.cached_message
+        after = await ctxchan.fetch_message(payload.message_id)
 
-                for chan in plainchans:
-                    channel = self.bot.get_channel(int(chan[0]))
-                    await channel.send(embed=mesEmbed)
-            except:
-                pass
+        try:
+            #list of channels for the guild from sql database
+            select_edit = "SELECT chanid FROM editlogs WHERE guildid = {}".format(after.guild.id)
+            editchans = execute_read_query(self.connection,select_edit)
+            
+            #create embed, if before is none, doesn't include the before field
+            editEmbed = Embed(title='{0}: {0.id}'.format(after.author),type='rich',color=0xd010d0,timestamp=after.edited_at,description="[Click here for context.]({})".format(after.jump_url))
+            editEmbed.set_thumbnail(url=after.author.avatar_url)
+            if before != None:
+                editEmbed.add_field(name='__Before Message:__',value=before.content,inline=False)
+            editEmbed.add_field(name='__Edited Message:__',value=after.content,inline=False)
+
+            #sends the embed to list of channels
+            for chan in editchans:
+                channel = self.bot.get_channel(int(chan[0]))
+                await channel.send(embed=editEmbed)
+        except Error as e:
+            print("{}: {}".format(e,e.__cause__))
         
 
 def setup(bot):
