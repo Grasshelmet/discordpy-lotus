@@ -1,4 +1,4 @@
-import discord, mysql.connector,typing
+import discord, mysql.connector,typing,datetime
 from cogs.cog_config.mysqldata import sqlconfig
 from mysql.connector import Error,errorcode
 from discord.ext import commands
@@ -74,7 +74,9 @@ def getTableName(tbname):
             "plaindms":"plaindms",
             "editlogs":"editlogs",
             "editlog":"editlogs",
-            "messageedits":"editlogs"
+            "messageedits":"editlogs",
+            "deletelogs":"deletelogs",
+            "delete":"deletelogs"
             }
 
     return logtables.get(tbname,"None")
@@ -85,12 +87,14 @@ class Logging(commands.Cog):
         self.last_member=None
         self.connection = dbinit()
 
+    #destrutcor
     def __del__(self):
         print('Closing logging cog')
         if self.connection != None:
             self.connection.cmd_quit()
         self.connection = None
 
+    #connection check
     async def check_connection(ctx):
         if ctx.cog.connection == None:
             await ctx.send('No sqlserver connected to')
@@ -151,7 +155,7 @@ class Logging(commands.Cog):
             await ctx.send('Invalid database table')
             return
         #What to set insert channel and create table to if edit logs
-        elif tbname == "editlogs":
+        elif tbname == "editlogs" or tbname == "deletelogs":
             insert_channel = ("""INSERT INTO {} 
                                   (guildid,chanid)
                                   VALUES ({},{})""".format(tbname,ctx.guild.id,channel)
@@ -167,14 +171,13 @@ class Logging(commands.Cog):
         #What to set for plain text and commands sent to bot dms
         elif tbname == "plaindms" or tbname == "commsdms":
             insert_channel = ("""INSERT INTO {} 
-                                  (guildid,chanid)
-                                  VALUES ({},{})""".format(tbname,ctx.guild.id,channel)
+                                  (chanid)
+                                  VALUES ({})""".format(tbname,channel)
 
                                   )
             create_table = """
                 CREATE TABLE IF NOT EXISTS {} (
                     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    guildid VARCHAR(18),
                     chanid VARCHAR(18)
                     ) ENGINE=InnoDB
                 """.format(tbname)
@@ -272,6 +275,30 @@ class Logging(commands.Cog):
                 await channel.send(embed=editEmbed)
         except Error as e:
             print("{}: {}".format(e,e.__cause__))
+
+    @commands.Cog.listener('on_raw_message_delete')
+    async def messdel(self,payload):
+        ctxchan = self.bot.get_channel(payload.channel_id)
+        before = payload.cached_message
+
+        try:
+            #list of channels from the sql database
+            select_del = "SELECT chanid FROM deletelogs WHERE guildid = {}".format(payload.guild_id)
+            delchans = execute_read_query(self.connection,select_del)
+
+            #create embed,will record that a message was deleted if not in chache,but no other data
+            if before == None:
+                delEmbed = Embed(title='Message Deleted',type='rich',color=0xd020d0,timestamp=datetime.datetime.now(),description = 'Message deleted in {}'.format(ctxchan.mention))
+            else:
+                delEmbed = Embed(title='{0}: {0.id}'.format(before.author),type='rich',color=0xd010d0,timestamp=datetime.datetime.now(),description="[Click here for context.]({})".format(before.jump_url))
+                delEmbed.add_field(name='__Deleted Message__',value=before.content,inline =False)
+
+            #sends the embed to list of channels
+            for chan in delchans:
+                channel = self.bot.get_channel(int(chan[0]))
+                await channel.send(embed=delEmbed)
+        except Error as e:
+            print('{}: {}'.format(e,e.__cause__))
         
 
 def setup(bot):
