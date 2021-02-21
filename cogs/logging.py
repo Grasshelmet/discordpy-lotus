@@ -74,6 +74,7 @@ def getTableName(tbname):
             "plaindms":"plaindms",
             "editlogs":"editlogs",
             "editlog":"editlogs",
+            "edit":"editlogs",
             "messageedits":"editlogs",
             "deletelogs":"deletelogs",
             "delete":"deletelogs"
@@ -146,8 +147,8 @@ class Logging(commands.Cog):
         if type(channel) is not int:
             channel = channel.id
 
-        getTableName(tbname)
-
+        tbname = getTableName(tbname)
+       
         insert_channel=""
         create_table=""
 
@@ -189,13 +190,18 @@ class Logging(commands.Cog):
             execute_query(self.connection,insert_channel)
 
         except mysql.connector.Error as e:
-            if e.errno == errorcode.ER_NO_SUCH_TABLE:
-                #create table
-                execute_query(self.connection,create_table)
+            try:
+                if e.errno == errorcode.ER_NO_SUCH_TABLE:
+                    #create table
+                    execute_query(self.connection,create_table)
 
-                #insert channel into table
-                execute_query(self.connection,insert_channel)
+                    #insert channel into table
+                    execute_query(self.connection,insert_channel)
+            except Error as e:
+                await ctx.send('Failed to add channel\n Error: {}'.format(e.__cause__))
+                return
 
+        await ctx.send('{} added to {} database'.format(self.bot.get_channel(channel).mention,tbname))
 
     @commands.command(brief='Drops a Channel Id from a table')
     @commands.check(check_connection)
@@ -210,7 +216,7 @@ class Logging(commands.Cog):
         if type(channel) is not int:
             channel = channel.id
 
-        getTableName(tbname)
+        tbname = getTableName(tbname)
         
         if tbname == "None":
             await ctx.send('Invalid database table')
@@ -288,9 +294,9 @@ class Logging(commands.Cog):
 
             #create embed,will record that a message was deleted if not in chache,but no other data
             if before == None:
-                delEmbed = Embed(title='Message Deleted',type='rich',color=0xd020d0,timestamp=datetime.datetime.now(),description = 'Message deleted in {}'.format(ctxchan.mention))
+                delEmbed = Embed(title='Message Deleted',type='rich',color=0xd020d0,timestamp=datetime.datetime.now("America/Los_Angeles"),description = 'Message deleted in {}'.format(ctxchan.mention))
             else:
-                delEmbed = Embed(title='{0}: {0.id}'.format(before.author),type='rich',color=0xd010d0,timestamp=datetime.datetime.now(),description="[Click here for context.]({})".format(before.jump_url))
+                delEmbed = Embed(title='{0}: {0.id}'.format(before.author),type='rich',color=0xd010d0,timestamp=datetime.datetime.now("America/Los_Angeles"),description="[Click here for context.]({})".format(before.jump_url))
                 delEmbed.add_field(name='__Deleted Message__',value=before.content,inline =False)
 
             #sends the embed to list of channels
