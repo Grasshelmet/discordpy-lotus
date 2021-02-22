@@ -222,9 +222,14 @@ class Logging(commands.Cog):
             await ctx.send('Invalid database table')
             return
 
+        try:
+            delete_channel = ("""DELETE FROM {} WHERE chanid ={}""".format(tbname,channel))
+            execute_query(self.connection,delete_channel)
+        except Error as e:
+            await ctx.send('Failed to add channel\n Error: {}'.format(e.__cause__))
+            return
 
-        delete_channel = ("""DELETE FROM {} WHERE chanid ={}""".format(tbname,channel))
-        execute_query(self.connection,delete_channel)
+        await ctx.send('{} Removed from {} database'.format(self.bot.get_channel(channel).mention,tbname))
 
     #listener for dms sent to the bot
     @commands.Cog.listener('on_message')
@@ -294,9 +299,9 @@ class Logging(commands.Cog):
 
             #create embed,will record that a message was deleted if not in chache,but no other data
             if before == None:
-                delEmbed = Embed(title='Message Deleted',type='rich',color=0xd020d0,timestamp=datetime.datetime.now("America/Los_Angeles"),description = 'Message deleted in {}'.format(ctxchan.mention))
+                delEmbed = Embed(title='Message Deleted',type='rich',color=0xd020d0,timestamp=datetime.datetime.utcnow(),description = 'Message deleted in {}'.format(ctxchan.mention))
             else:
-                delEmbed = Embed(title='{0}: {0.id}'.format(before.author),type='rich',color=0xd010d0,timestamp=datetime.datetime.now("America/Los_Angeles"),description="[Click here for context.]({})".format(before.jump_url))
+                delEmbed = Embed(title='{0}: {0.id}'.format(before.author),type='rich',color=0xd010d0,timestamp=datetime.datetime.utcnow(),description="[Click here for context.]({})".format(before.jump_url))
                 delEmbed.add_field(name='__Deleted Message__',value=before.content,inline =False)
 
             #sends the embed to list of channels
