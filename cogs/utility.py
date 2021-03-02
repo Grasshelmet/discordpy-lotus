@@ -185,7 +185,60 @@ class Utility(commands.Cog):
         except Exception as e:
             print('Failed to send\n {}:{}\n'.format(e,e.__str__))
 
-    
+    @commands.command(brief='Applies a shift cipher of {key} to provided text')
+    async def shift(self,ctx,key : int,*text):
+        shifted = ""
 
+        allstr = ""
+        for strin in text:
+            allstr = " ".join([allstr,strin])
+        text = allstr
+
+
+        for c in text:
+            if c == ' ':
+                shifted+= ' '
+            elif (c.isupper()):
+                shifted += chr((ord(c) + key-65) % 26 + 65)
+             # Encrypt lowercase characters in plain text
+            else:
+                shifted += chr((ord(c) + key - 97) % 26 + 97)
+        await ctx.send(shifted)
+
+    @commands.command(brief='Decrypts shifted text')
+    async def decrypt(self,ctx,key:int,*cipher):
+        plain = ""
+
+        allstr = ""
+        for strin in cipher:
+            allstr = " ".join([allstr,strin])
+        cipher = allstr
+
+
+        for c in cipher:
+            if c == ' ':
+                plain += ' '
+            elif (c.isupper()):
+                plain += chr((ord(c) - key-65) % 26 + 65)
+             # Encrypt lowercase characters in plain text
+            else:
+                plain += chr((ord(c) - key - 97) % 26 + 97)
+            
+        await ctx.send(plain)
+
+    @commands.command(brief='Decrypts shifted text from trying to guess which letter in a cipher represents e',aliases=['dfe'])
+    async def decryptfrome(self,ctx,echr,*cipher):
+
+        allstr = ""
+        for strin in cipher:
+            allstr = " ".join([allstr,strin])
+        cipher = allstr
+
+
+        if(echr.isupper()):
+            echr= echr.lower()
+        key = (ord(echr)-ord('e'))%26
+        await self.decrypt(ctx,key,cipher)
+        
 def setup(bot):
     bot.add_cog(Utility(bot))
