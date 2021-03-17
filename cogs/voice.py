@@ -1,4 +1,4 @@
-import discord,typing,time
+import discord,typing,time,asyncio
 from discord.ext import commands
 
 FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
@@ -49,8 +49,11 @@ class Voice(commands.Cog):
                 return
 
 
-        vc.play(discord.FFmpegPCMAudio(file,**FFMPEG_OPTIONS),after=lambda e: print("Failed to play",e))
-        vc.is_playing()
+        vc.play(discord.FFmpegPCMAudio(file),after=lambda e: print("Failed to play",e))
+        while vc.is_playing():
+            await asyncio.sleep(.5)
+        await vc.disconnect()
+        vc.cleanup()
         
 def setup(bot):
     bot.add_cog(Voice(bot))
