@@ -59,6 +59,13 @@ class Voice(commands.Cog):
             'preferredquality': '192',
             }],
         }
+
+
+        for file in os.listdir('./'):
+            if file.endswith('.mp3'):
+                os.remove(file)
+
+
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
