@@ -72,5 +72,14 @@ class Voice(commands.Cog):
 
         if vc and vc.is_connected() and vc.is_paused():
             vc.resume()
+
+    #command to stop playing
+    @commands.command()
+    async def stop(self,ctx):
+        channel = ctx.author.voice.channel
+        vc = discord.utils.get(self.bot.voice_clients,guild=ctx.guild)
+
+        if vc and vc.is_connected():
+            vc.stop()
 def setup(bot):
     bot.add_cog(Voice(bot))
