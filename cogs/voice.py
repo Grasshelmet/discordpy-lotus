@@ -50,10 +50,27 @@ class Voice(commands.Cog):
 
 
         vc.play(discord.FFmpegPCMAudio(file),after=lambda e: print("Failed to play",e))
-        while vc.is_playing():
+        while vc.is_playing() or vc.is_paused():
             await asyncio.sleep(.5)
         await vc.disconnect()
         vc.cleanup()
-        
+
+    #command to pause currently playing audio
+    @commands.command()
+    async def pause(self,ctx): 
+        channel = ctx.author.voice.channel
+        vc = discord.utils.get(self.bot.voice_clients,guild=ctx.guild)
+
+        if vc and vc.is_connected() and vc.is_playing() and not vc.is_paused():
+            vc.pause()
+    
+    #command to resume paused audio
+    @commands.command()
+    async def resume(self,ctx):
+        channel = ctx.author.voice.channel
+        vc = discord.utils.get(self.bot.voice_clients,guild=ctx.guild)
+
+        if vc and vc.is_connected() and vc.is_paused():
+            vc.resume()
 def setup(bot):
     bot.add_cog(Voice(bot))
